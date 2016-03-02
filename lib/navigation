@@ -5,33 +5,13 @@
 -- we initialize everything
 if (blacklisted_blocks == nil) then
 
-	blacklisted_blocks = {
-		["MINECRAFT:ANDESITE"] = true,
-		["MINECRAFT:COBBLESTONE"] = true,
-		["MINECRAFT:DIORITE"] = true,
-		["MINECRAFT:DIRT"] = true,
-		["MINECRAFT:GRANITE"] = true,
-		["MINECRAFT:GRAVEL"] = true,
-		["MINECRAFT:SAND"] = true,
-		["MINECRAFT:STONE"] = true
-	};
-
-
-	-- burning logs is not desirable as we might me mining them
-	blacklisted_fuels = {
-		["MINECRAFT:LOG"] = true,
-		["MINECRAFT:LOG2"] = true,
-		["MINECRAFT:SAPLING"] = true
-	};
-
-
 	offset_x = 0;
 	offset_y = 0;
 	offset_z = 0;
-	heading = 0;
 
 end;
 
+local heading = 0;
 
 
 
