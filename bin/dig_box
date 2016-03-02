@@ -10,7 +10,7 @@
 --  ^
 
 
-os.loadAPI("/" .. fs.getDir(shell.getRunningProgram()) .. "/../lib/navigation.lib.lua");
+os.loadAPI("/" .. fs.getDir(shell.getRunningProgram()) .. "/../lib/navigation");
 
 
 
@@ -42,7 +42,7 @@ local initial_step_ahead = tonumber(argv[4]);
 	local step_ahead_loop;
 	-- let's move ahead as much as it takes
 	for step_ahead_loop = 1, initial_step_ahead do
-		dig_and_go("N");
+		navigation.dig_and_go("N");
 		offset_y = 0; -- this doesn't count
 	end;
 
@@ -117,18 +117,18 @@ local initial_step_ahead = tonumber(argv[4]);
 				else
 					-- this is just the end of a column. We just shift one column and invert N/S
 					if (returning_x) then
-						dig_and_go("W");
+						navigation.dig_and_go("W");
 					else
-						dig_and_go("E");
+						navigation.dig_and_go("E");
 					end;
 					returning_y = (not returning_y);
 				end;
 			else
 				-- no. keep digging N/S
 				if (returning_y) then
-					dig_and_go("S");
+					navigation.dig_and_go("S");
 				else
-					dig_and_go("N");
+					navigation.dig_and_go("N");
 				end;
 			end;
 
@@ -166,18 +166,18 @@ local initial_step_ahead = tonumber(argv[4]);
 			print("Excavation complete. Returning to starting point");
 		else
 			if (target_layer < 0) then
-				dig_and_go("D");
+				navigation.dig_and_go("D");
 			else
-				dig_and_go("U");
+				navigation.dig_and_go("U");
 			end;
 		end;
 
 	end;
 
-	back_to_start();
+	navigation.back_to_start();
 
 	-- let's move back to the starting point
 	for step_ahead_loop = 1, initial_step_ahead do
-		dig_and_go("S");
+		navigation.dig_and_go("S");
 	end;
-	heading_set("N");
+	navigation.heading_set("N");
