@@ -6,9 +6,9 @@ local required_paths = {
 local base_url = "https://raw.githubusercontent.com/z0rb1n0/Z0rbputerCraft/master";
 
 local update_files = {
-	"update_zc.lua",
-	"lib/navigation.lib.lua",
-	"bin/dig_box.lua"
+	"update_zc",
+	"lib/navigation",
+	"bin/dig_box"
 };
 
 
