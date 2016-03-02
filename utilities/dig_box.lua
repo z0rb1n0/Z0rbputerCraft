@@ -19,6 +19,13 @@ blacklisted_blocks = {
 };
 
 
+-- burning logs is not desirable as we might me mining them
+blacklisted_fuels = {
+	["MINECRAFT:LOG"] = true,
+	["MINECRAFT:LOG2"] = true,
+};
+
+
 
 offset_x = 0;
 offset_y = 0;
@@ -263,12 +270,16 @@ local size_z = tonumber(argv[3]);
 						previous_fuel_level = turtle.getFuelLevel();
 
 						if (slot_info) then
-							if (previous_fuel_level < turtle.getFuelLimit()) then
-								-- we refuel if possible and needed
-								if (turtle.refuel()) then
-									print("Refueled " .. (turtle.getFuelLevel() - previous_fuel_level) .. " units from slot " .. slot_idx);
-									print("New fuel level: " .. turtle.getFuelLevel());
+							if (blacklisted_fuels[string.upper(slot_info.name)] == nil) then
+								if (previous_fuel_level < turtle.getFuelLimit()) then
+									-- we refuel if possible, desirable and needed
+									if (turtle.refuel()) then
+										print("Refueled " .. (turtle.getFuelLevel() - previous_fuel_level) .. " units from slot " .. slot_idx .. " (" .. slot_info.name ..")");
+										print("New fuel level: " .. turtle.getFuelLevel());
+									end;
 								end;
+							else
+								print("Fuel `" .. slot_info.name .. "` at slot " .. slot_idx .. " is blacklisted");
 							end;
 
 
@@ -319,7 +330,7 @@ local size_z = tonumber(argv[3]);
 			
 			if (turtle.getFuelLevel() < (math.abs(offset_x) + math.abs(offset_y) + math.abs(offset_z))) then
 				low_fuel = true;
-				print("Fuel level barely sufficient to return to base. Abandoning escavation");
+				print("Fuel level barely sufficient to return to base. Abandoning excavation");
 			end;
 			
 		end;
