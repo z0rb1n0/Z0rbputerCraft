@@ -14,9 +14,9 @@ local update_me = {
 
 
 -- we create the new directories
-local path_looper;
+local path_id; local path_looper;
 
-for path_looper in required_paths do
+for path_id, path_looper in required_paths do
 	if (not fs.exists("/" .. path_looper)) then
 		fs.makeDir("/" .. path_looper);
 	end;
@@ -25,7 +25,7 @@ end;
 
 
 -- we the update the files
-for path_looper in required_paths do
+for path_id, path_looper in required_paths do
 	if (fs.exists("/" .. path_looper)) then
 		fs.delete("/" .. path_looper);
 	end;
