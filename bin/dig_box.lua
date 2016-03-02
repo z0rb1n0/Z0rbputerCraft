@@ -10,7 +10,7 @@
 --  ^
 
 
-os.loadAPI("/" .. fs.getDir(shell.getRunningProgram()) .. "/../lib/navigation.lua");
+os.loadAPI("/" .. fs.getDir(shell.getRunningProgram()) .. "/../lib/navigation.lib.lua");
 
 
 
