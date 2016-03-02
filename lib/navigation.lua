@@ -1,0 +1,216 @@
+# library of functions that allow navigation
+
+
+
+-- we initialize everything
+if (blacklisted_blocks == nil) then
+
+	blacklisted_blocks = {
+		["MINECRAFT:ANDESITE"] = true,
+		["MINECRAFT:COBBLESTONE"] = true,
+		["MINECRAFT:DIORITE"] = true,
+		["MINECRAFT:DIRT"] = true,
+		["MINECRAFT:GRANITE"] = true,
+		["MINECRAFT:GRAVEL"] = true,
+		["MINECRAFT:SAND"] = true,
+		["MINECRAFT:STONE"] = true
+	};
+
+
+	-- burning logs is not desirable as we might me mining them
+	blacklisted_fuels = {
+		["MINECRAFT:LOG"] = true,
+		["MINECRAFT:LOG2"] = true,
+		["MINECRAFT:SAPLING"] = true
+	};
+
+
+	offset_x = 0;
+	offset_y = 0;
+	offset_z = 0;
+	heading = 0;
+
+end;
+
+
+
+
+local function heading_set(direction)
+ret_val = nil;
+
+
+	local target_heading = nil;
+
+	-- we adjust the direction
+	if (direction == "N") then
+		target_heading = 0;
+	elseif (direction == "E") then
+		target_heading = 90;
+	elseif (direction == "S") then
+		target_heading = 180;
+	elseif (direction == "W") then
+		target_heading = 270;
+	end
+
+	if (target_heading == nil) then
+		print( "Direction must be one of the following N, S, E, W");
+		return false;
+	end;
+
+
+	-- we do the shortest rotation. Some normalization is required
+	local heading_difference = (target_heading - heading);
+	if (heading_difference > 180) then
+		heading_difference = (heading_difference - 360);
+	elseif (heading_difference < -180) then
+		heading_difference = (heading_difference + 360);
+	end;
+
+	if (heading_difference ~= 0) then
+	
+		while (heading_difference ~= 0) do
+
+			if (heading_difference < 0) then
+				turtle.turnLeft()
+				heading_difference = (heading_difference + 90);
+			else
+				turtle.turnRight()
+				heading_difference = (heading_difference - 90);
+			end;
+
+		end;
+		
+		if (ret_val == nil) then
+			heading = (target_heading % 360); -- we normalize the angles from 0 to 360
+			--print("Heading set to " .. heading .. " degrees");
+		else
+			print("Failed to set turtle heading");
+			return false;
+		end;
+	end;
+	
+	ret_val = true;
+	
+	return ret_val;
+end
+
+
+
+-- Possible values of "direction" relative to the local grid pictured above,
+-- and NOT the global world:
+--  N, S, E, W, U, D
+local function dig_and_go(direction)
+local ret_val = nil;
+
+
+	while ((ret_val == nil) or (not ret_val)) do
+
+		if ((direction ~= "U") and (direction ~= "D")) then
+			if (not heading_set(direction)) then
+				print("Call to `heading_set()` failed");
+				return false;
+			end;
+		end;
+		
+		--print("Moving " .. direction);
+
+		if ((direction ~= "U") and (direction ~= "D")) then
+			-- we dig ahead and go there
+			if (turtle.detect()) then
+				if (not turtle.dig()) then
+					print("Failed to dig ahead");
+					return false;
+				end;
+			end;
+
+			if (turtle.forward()) then
+				if (heading == 0) then
+					offset_y = (offset_y + 1);
+				elseif (heading == 90) then
+					offset_x = (offset_x + 1);
+				elseif (heading == 180) then
+					offset_y = (offset_y - 1);
+				elseif (heading == 270) then
+					offset_x = (offset_x - 1);
+				end;
+				ret_val = true;
+			else
+				print("Failed to move ahead");
+				return false;
+			end;
+
+		else
+			-- above or below? This is a little redundant due to specific calls
+			if (direction == "U") then
+				if (turtle.detectUp()) then
+					if (not turtle.digUp()) then
+						print("Failed to dig up");
+						return false;
+					end;
+				end;
+				if (turtle.up()) then
+					offset_z = (offset_z + 1);
+					ret_val = true;
+				else
+					print("Failed to move up");
+					return false;
+				end;
+			elseif (direction == "D") then
+				if (turtle.detectDown()) then
+					if (not turtle.digDown()) then
+						print("Failed to dig down");
+						return false;
+					end;
+				end;
+				if (turtle.down()) then
+					offset_z = (offset_z - 1);
+					ret_val = true;
+				else
+					print("Failed to move down");
+					return false;
+				end;
+			else
+				print("Unsupported direction: " .. direction);
+				return false;
+			end;
+		end;
+
+		
+		if (ret_val ~= true) then
+			print("Movement order failed. Enforcing a one second sleep and trying again");
+			sleep(1);
+		end;
+	end;
+
+	return ret_val;
+end
+
+
+local function back_to_start()
+	while (offset_z ~= 0) do
+		if (offset_z < 0) then
+			dig_and_go("U");
+		else
+			dig_and_go("D");
+		end;
+	end;
+
+	while (offset_x ~= 0) do
+		if (offset_x < 0) then
+			dig_and_go("E");
+		else
+			dig_and_go("W");
+		end;
+	end;
+
+	while (offset_y ~= 0) do
+		if (offset_y < 0) then
+			dig_and_go("N");
+		else
+			dig_and_go("S");
+		end;
+	end;
+	
+
+end;
+
