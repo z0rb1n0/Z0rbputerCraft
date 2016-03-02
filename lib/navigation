@@ -3,17 +3,24 @@
 
 
 -- we initialize everything
-if (blacklisted_blocks == nil) then
+if (heading == nil) then
 
+	heading = 0;
 	offset_x = 0;
 	offset_y = 0;
 	offset_z = 0;
 
 end;
 
-local heading = 0;
 
+function heading_get()
+	return heading;
+end;
 
+function heading_force(new_heading)
+	heading = new_heading;
+	return true;
+end;
 
 function heading_set(direction)
 ret_val = nil;
@@ -72,7 +79,39 @@ ret_val = nil;
 	ret_val = true;
 	
 	return ret_val;
-end
+end;
+
+
+
+-- getters/setters 'cause apparently member variables are not accessible
+-- in loadAPI'd files
+function offset_get_x()
+	return offset_x;
+end;
+
+function offset_get_y()
+	return offset_y;
+end;
+
+function offset_get_z()
+	return offset_z;
+end;
+
+
+function offset_force_x(new_offset)
+	offset_x = new_offset;
+	return true;
+end;
+
+function offset_force_y(new_offset)
+	offset_y = new_offset;
+	return true;
+end;
+
+function offset_force_z(new_offset)
+	offset_z = new_offset;
+	return true;
+end;
 
 
 
@@ -91,7 +130,7 @@ local ret_val = nil;
 				return false;
 			end;
 		end;
-		
+
 		--print("Moving " .. direction);
 
 		if ((direction ~= "U") and (direction ~= "D")) then
@@ -193,4 +232,3 @@ function back_to_start()
 	
 
 end;
-

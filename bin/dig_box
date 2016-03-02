@@ -12,6 +12,7 @@
 
 os.loadAPI("/" .. fs.getDir(shell.getRunningProgram()) .. "/../lib/navigation");
 
+
 local blacklisted_blocks = {
 	["MINECRAFT:ANDESITE"] = true,
 	["MINECRAFT:COBBLESTONE"] = true,
@@ -47,7 +48,7 @@ local initial_step_ahead = tonumber(argv[4]);
 		initial_step_ahead = 1;
 	end;
 
-	
+
 	if (((size_x == nil) or (size_x < 1)) or ((size_y == nil) or (size_y < 1)) or ((initial_step_ahead == nil) or (initial_step_ahead < 1))) then
 		print("Usage:");
 		print("    dig_box <size_x> <size_y> [ target_layer = 0 [ initial_step_ahead = 1 ]]");
@@ -61,8 +62,9 @@ local initial_step_ahead = tonumber(argv[4]);
 	-- let's move ahead as much as it takes
 	for step_ahead_loop = 1, initial_step_ahead do
 		navigation.dig_and_go("N");
-		navigation.offset_y = 0; -- this doesn't count
+		navigation.offset_force_y(0); -- this doesn't count
 	end;
+
 
 	print("Initial square reached");
 	print("Digging " .. size_x .. "x" .. size_y .. "x" .. (math.abs(target_layer) + 1) .. " cavity");
@@ -75,6 +77,10 @@ local initial_step_ahead = tonumber(argv[4]);
 	local returning_y = false;
 	local returning_x = false;
 	local block_below = nil;
+	
+	local curr_offset_x = 0;
+	local curr_offset_y = 0;
+	local curr_offset_z = 0;
 
 	-- we stop if:
 	--  - we're going down and we hit bedrock
@@ -83,14 +89,19 @@ local initial_step_ahead = tonumber(argv[4]);
 
 	while (not (((target_layer < 0) and on_bedrock) or dig_complete or low_fuel)) do
 
-		print("Excavating layer " .. navigation.offset_z .. "; target is " .. target_layer);
+		print("Excavating layer " .. curr_offset_z .. "; target is " .. target_layer);
 		layer_complete = false;
 
 		while (not layer_complete) do
+
+			-- we store these not to make too many calls
+			curr_offset_x = navigation.offset_get_x();
+			curr_offset_y = navigation.offset_get_y();
+
 			-- did we just complete a column?
-			if ((returning_y and (navigation.offset_y == 0)) or ((not returning_y) and (navigation.offset_y >= (size_y - 1)))) then
+			if ((returning_y and (curr_offset_y == 0)) or ((not returning_y) and (curr_offset_y >= (size_y - 1)))) then
 				-- Yes we are. did we just complete a row too?
-				if ((returning_x and (navigation.offset_x == 0)) or ((not returning_x) and (navigation.offset_x >= (size_x - 1)))) then
+				if ((returning_x and (curr_offset_x == 0)) or ((not returning_x) and (curr_offset_x >= (size_x - 1)))) then
 
 					-- we just completed a column AND a row. Time to invert everything and loop out.
 					returning_y = (not returning_y);
@@ -171,14 +182,14 @@ local initial_step_ahead = tonumber(argv[4]);
 			end;
 
 
-			if (turtle.getFuelLevel() < (initial_step_ahead + math.abs(navigation.offset_x) + math.abs(navigation.offset_y) + math.abs(navigation.offset_z))) then
+			if (turtle.getFuelLevel() < (initial_step_ahead + math.abs(curr_offset_x) + math.abs(curr_offset_y) + math.abs(curr_offset_z))) then
 				low_fuel = true;
 				print("Fuel level barely sufficient to return to base. Returning to starting point");
 			end;
 			
 		end;
 
-		dig_complete = (navigation.offset_z == target_layer);
+		dig_complete = (curr_offset_z == target_layer);
 
 		if (dig_complete) then
 			print("Excavation complete. Returning to starting point");
@@ -188,6 +199,7 @@ local initial_step_ahead = tonumber(argv[4]);
 			else
 				navigation.dig_and_go("U");
 			end;
+			curr_offset_z = navigation.offset_get_z();
 		end;
 
 	end;
