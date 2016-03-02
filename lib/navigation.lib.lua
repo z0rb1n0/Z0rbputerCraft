@@ -35,7 +35,7 @@ end;
 
 
 
-local function heading_set(direction)
+function heading_set(direction)
 ret_val = nil;
 
 
@@ -99,7 +99,7 @@ end
 -- Possible values of "direction" relative to the local grid pictured above,
 -- and NOT the global world:
 --  N, S, E, W, U, D
-local function dig_and_go(direction)
+function dig_and_go(direction)
 local ret_val = nil;
 
 
@@ -186,7 +186,7 @@ local ret_val = nil;
 end
 
 
-local function back_to_start()
+function back_to_start()
 	while (offset_z ~= 0) do
 		if (offset_z < 0) then
 			dig_and_go("U");
