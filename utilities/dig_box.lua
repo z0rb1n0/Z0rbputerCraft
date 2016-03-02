@@ -216,13 +216,13 @@ end;
 local argv = { ... };
 local size_x = tonumber(argv[1]);
 local size_y = tonumber(argv[2]);
-local size_z = tonumber(argv[3]);
+local target_layer = tonumber(argv[3]);
 
 
-	if (((size_x == nil) or (size_x < 1)) or ((size_y == nil) or (size_y < 1)) or ((size_z == nil) or (size_z < 1))) then
+	if (((size_x == nil) or (size_x < 1)) or ((size_y == nil) or (size_y < 1)) or ((target_layer == nil) or (target_layer == 0))) then
 		print("Usage:");
 		print("    quarry <size_x> <size_y> <depth_limit>");
-		print("    (All values must be positive)");
+		print("    (X/Y values must be positive)");
 		return 1;
 	end;
 
@@ -241,10 +241,14 @@ local size_z = tonumber(argv[3]);
 	local returning_x = false;
 	local block_below = nil;
 
-	while (not (on_bedrock or dig_complete or low_fuel)) do
+	-- we stop if:
+	--  - we're going down and we hit bedrock
+	--  - we're finished
+	--  - we've got just enough fuel to get back to origin
 
-		dig_and_go("D");
-		print("Excavating layer " .. (-offset_z) .. "/" .. size_z);
+	while (not (((target_layer < 0) and on_bedrock) or dig_complete or low_fuel)) do
+
+		print("Excavating layer " .. offset_z .. "; target is " .. target_layer);
 		layer_complete = false;
 
 		while (not layer_complete) do
@@ -311,20 +315,23 @@ local size_z = tonumber(argv[3]);
 				end;
 			end;
 
-			-- time to find out what's beneath us, in order to stop at the first bedrock we meet
-			local block_below = nil;
-			local block_is_below = false;
+			-- if we're digging down, then it's time to find out what's beneath us,
+			-- in order to stop at the first bedrock we meet
+			if (target_layer < 0) then
+				local block_below = nil;
+				local block_is_below = false;
 
-			block_is_below, block_below = turtle.inspectDown();
-			if (not block_is_below) then
-				-- we just re-nullify it
-				block_below = nil;
-			end;
+				block_is_below, block_below = turtle.inspectDown();
+				if (not block_is_below) then
+					-- we just re-nullify it
+					block_below = nil;
+				end;
 
-			if (block_below ~= nil) then
-				if ((not on_bedrock) and (string.upper(block_below.name) == "MINECRAFT:BEDROCK")) then
-					on_bedrock = true;
-					print("Bedrock encountered. Will stop at this layer")
+				if (block_below ~= nil) then
+					if ((not on_bedrock) and (string.upper(block_below.name) == "MINECRAFT:BEDROCK")) then
+						on_bedrock = true;
+						print("Bedrock encountered. Will stop at this layer")
+					end;
 				end;
 			end;
 
@@ -336,7 +343,13 @@ local size_z = tonumber(argv[3]);
 			
 		end;
 
-		dig_complete = ((-offset_z) >= size_z);
+		dig_complete = (offset_z == target_layer);
+		if (target_layer < 0) then
+			dig_and_go("D");
+		else
+			dig_and_go("U");
+		fi;
+
 		
 	end;
 
