@@ -23,6 +23,7 @@ blacklisted_blocks = {
 blacklisted_fuels = {
 	["MINECRAFT:LOG"] = true,
 	["MINECRAFT:LOG2"] = true,
+	["MINECRAFT:SAPLING"] = true
 };
 
 
