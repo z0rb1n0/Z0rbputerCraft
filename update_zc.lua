@@ -5,9 +5,9 @@ local required_paths = {
 
 local base_url = "https://raw.githubusercontent.com/z0rb1n0/Z0rbputerCraft/master";
 
-local update_me = {
-	"bin/update_zc.lua",
-	"lib/navigation.lua",
+local update_files = {
+	"update_zc.lua",
+	"lib/navigation.lib.lua",
 	"bin/dig_box.lua"
 };
 
@@ -25,9 +25,18 @@ end;
 
 
 -- we the update the files
-for path_id, path_looper in ipairs(required_paths) do
-	if (fs.exists("/" .. path_looper)) then
-		fs.delete("/" .. path_looper);
+local target_file;
+for path_id, path_looper in ipairs(update_files) do
+	source_url = (base_url .. "/" .. path_looper);
+	target_file = ("/" .. path_looper);
+	print("Updating `" .. target_file .. "` from `" .. source_url .. "`");
+	if (fs.exists(target_file .. ".download")) then
+		fs.delete(target_file .. ".download");
 	end;
-	shell.run("wget", (base_url .. "/" .. path_looper), ("/" .. path_looper));
+	if (shell.run("wget", source_url, (target_file .. ".download"))) then
+		if (fs.exists(target_file)) then
+			fs.delete(target_file);
+		end;
+		fs.move((target_file .. ".download"), target_file);
+	end;
 end;
