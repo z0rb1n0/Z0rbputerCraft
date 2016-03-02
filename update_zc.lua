@@ -29,4 +29,5 @@ for path_looper in required_paths do
 	if (fs.exists("/" .. path_looper)) then
 		fs.delete("/" .. path_looper);
 	end;
+	shell.run("wget", (base_url .. "/" .. path_looper), ("/" .. path_looper));
 end;
