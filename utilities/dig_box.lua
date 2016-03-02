@@ -1,11 +1,13 @@
 
 -- The following is a representation of how we start (for each layer)
--- (The "greater than" symbol is the turtle at start
+-- (The caret symbol is the turtle at start, with initial_step_ahead set to 1).
+-- Higher numbers increase the distance
 -- A 0 degrees heading means facing "north" IN THIS REFERENCE FRAME, NOT MINECRAFT
 --  ########
 --  ########
 --  ########
---  ^#######
+--  ########
+--  ^
 
 blacklisted_blocks = {
 	["MINECRAFT:ANDESITE"] = true,
@@ -132,6 +134,7 @@ ret_val = nil;
 			elseif (heading == 270) then
 				offset_x = (offset_x - 1);
 			end;
+			ret_val = true;
 		else
 			print("Failed to move ahead");
 			return false;
@@ -148,6 +151,7 @@ ret_val = nil;
 			end;
 			if (turtle.up()) then
 				offset_z = (offset_z + 1);
+				ret_val = true;
 			else
 				print("Failed to move up");
 				return false;
@@ -161,6 +165,7 @@ ret_val = nil;
 			end;
 			if (turtle.down()) then
 				offset_z = (offset_z - 1);
+				ret_val = true;
 			else
 				print("Failed to move down");
 				return false;
@@ -170,8 +175,12 @@ ret_val = nil;
 			return false;
 		end;
 	end;
-		
-	ret_val = true;
+
+	
+	if (ret_val ~= true) then
+		print("Movement order failed. Enforcing a one second sleep");
+		sleep(1);
+	end;
 
 	return ret_val;
 end
@@ -202,13 +211,8 @@ local function back_to_start()
 		end;
 	end;
 	
-	heading_set("N");
 
 end;
-
-
-
---dig_and_go(argv[1]);
 
 
 
@@ -217,21 +221,37 @@ local argv = { ... };
 local size_x = tonumber(argv[1]);
 local size_y = tonumber(argv[2]);
 local target_layer = tonumber(argv[3]);
+local initial_step_ahead = tonumber(argv[4]);
 
 
-	if (((size_x == nil) or (size_x < 1)) or ((size_y == nil) or (size_y < 1)) or ((target_layer == nil) or (target_layer == 0))) then
-		print("Usage:");
-		print("    quarry <size_x> <size_y> <depth_limit>");
-		print("    (X/Y values must be positive)");
-		return 1;
+	if (target_layer == nil) then
+		target_layer = 0;
+	end;
+
+	if (initial_step_ahead == nil) then
+		initial_step_ahead = 1;
 	end;
 
 	
-	-- On even numbered layers, we move right on even numbered rows and left on odd numbers ones.
-	-- All the multipliers are inverted for odd numbered layers. Do not forget that all of this is
-	-- in the reference frame of the position/heading of the turtle when we start
+	if (((size_x == nil) or (size_x < 1)) or ((size_y == nil) or (size_y < 1)) or ((initial_step_ahead == nil) or (initial_step_ahead < 1))) then
+		print("Usage:");
+		print("    quarry <size_x> <size_y> [ target_layer = 0 [ initial_step_ahead = 1 ]]");
+		print("    (X/Y/stepahead values must be positive)");
+		return 1;
+	end;
+
+
+	print("Positioning to initial square");
+	local step_ahead_loop;
+	-- let's move ahead as much as it takes
+	for step_ahead_loop = 1, initial_step_ahead do
+		dig_and_go("N");
+		offset_y = 0; -- this doesn't count
+	end;
+
+	print("Initial square reached");
+	print("Digging " .. size_x .. "x" .. size_y .. "x" .. (math.abs(target_layer) + 1) .. " cavity");
 	
-	-- we start by "burrowing" in the first layer, row 0, col 0 (or just moving there if it's air)
 
 	local on_bedrock = false;
 	local low_fuel = false;
@@ -336,21 +356,31 @@ local target_layer = tonumber(argv[3]);
 			end;
 
 			
-			if (turtle.getFuelLevel() < (math.abs(offset_x) + math.abs(offset_y) + math.abs(offset_z))) then
+			if (turtle.getFuelLevel() < (initial_step_ahead + math.abs(offset_x) + math.abs(offset_y) + math.abs(offset_z))) then
 				low_fuel = true;
-				print("Fuel level barely sufficient to return to base. Abandoning excavation");
+				print("Fuel level barely sufficient to return to base. Returning to starting point");
 			end;
 			
 		end;
 
 		dig_complete = (offset_z == target_layer);
-		if (target_layer < 0) then
-			dig_and_go("D");
-		else
-			dig_and_go("U");
-		fi;
 
-		
+		if (dig_complete) then
+			print("Excavation complete. Returning to starting point");
+		else
+			if (target_layer < 0) then
+				dig_and_go("D");
+			else
+				dig_and_go("U");
+			end;
+		end;
+
 	end;
 
 	back_to_start();
+
+	-- let's move back to the starting point
+	for step_ahead_loop = 1, initial_step_ahead do
+		dig_and_go("S");
+	end;
+	heading_set("N");
