@@ -1,0 +1,14 @@
+-- we remove "." and ".." from the path, and add "/bin" before anything else
+local path_c;
+local fixed_path = "";
+local bin_already_there = false;
+
+for path_c in string.gmatch(shell.path(), "[^:]+") do
+	if (not ((path_c == ".") or (path_c == ".."))) then
+		if (string.len(fixed_path) > 0) then fixed_path = (fixed_path .. ":"); end
+		fixed_path = (fixed_path .. path_c);
+		if (path_c == "/bin") then bin_already_there = true end;
+	end;
+end;
+if (not bin_already_there) then fixed_path = ("/bin:" .. fixed_path); end;
+shell.setPath(fixed_path);
