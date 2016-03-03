@@ -1,6 +1,13 @@
 # library of functions that allow navigation
 
-
+-- burning logs is not desirable as we might me mining them
+if (not blacklisted_fuels) then
+	blacklisted_fuels = {
+		["MINECRAFT:LOG"] = true,
+		["MINECRAFT:LOG2"] = true,
+		["MINECRAFT:SAPLING"] = true
+	};
+end;
 
 -- we initialize everything
 if (heading == nil) then
@@ -11,6 +18,7 @@ if (heading == nil) then
 	offset_z = 0;
 
 end;
+
 
 
 function heading_get()

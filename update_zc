@@ -7,6 +7,7 @@ local base_url = "https://raw.githubusercontent.com/z0rb1n0/Z0rbputerCraft/maste
 
 local update_files = {
 	"update_zc",
+	"lib/inventory",
 	"lib/navigation",
 	"bin/dig_box"
 };

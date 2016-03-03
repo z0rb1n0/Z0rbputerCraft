@@ -1,0 +1,64 @@
+# library of functions that allow navigation
+
+-- returns the name of the currently selected item, or nil if there is none
+function current_item()
+ret_val = nil;
+
+	local slot_info = turtle.getItemDetail(slot_idx);
+	
+	if (slot_info and string.len(slot_info.name)) then
+		return slot_info.name;
+	end;
+	return ret_val;
+
+end;
+
+-- counts total occurrences. Counts all items if item_name is nil
+function count_items(item_name)
+local ret_val = 0;
+
+
+	local slot_idx;
+	local slot_info;
+
+
+	for slot_idx = 1, 16 do
+
+		--turtle.select(slot_idx);
+		slot_info = turtle.getItemDetail(slot_idx);
+
+		if (slot_info) then
+			if ((item_name == nil) or (string.upper(string.upper(slot_info.name)) == string.upper(item_name))) then
+				ret_val = (ret_val + slot_info.count);
+			end;
+		end;
+
+	end;
+	
+	return ret_val;
+
+end;
+
+
+-- returns the lowest slot number where the named item can be found or nil if it cannot be found
+function find_item(item_name)
+ret_val = nil;
+
+	local slot_idx;
+	local slot_info;
+
+	for slot_idx = 1, 16 do
+
+		slot_info = turtle.getItemDetail(slot_idx);
+
+		if (slot_info) then
+			if (string.upper(string.upper(slot_info.name)) == string.upper(item_name)) then
+				return slot_idx;
+			end;
+		end;
+
+	end;
+
+	return ret_val;
+
+end;

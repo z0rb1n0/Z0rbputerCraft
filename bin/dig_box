@@ -25,12 +25,6 @@ local blacklisted_blocks = {
 };
 
 
--- burning logs is not desirable as we might me mining them
-local blacklisted_fuels = {
-	["MINECRAFT:LOG"] = true,
-	["MINECRAFT:LOG2"] = true,
-	["MINECRAFT:SAPLING"] = true
-};
 
 
 local argv = { ... };
@@ -92,7 +86,7 @@ local initial_step_ahead = tonumber(argv[4]);
 		print("Excavating layer " .. curr_offset_z .. "; target is " .. target_layer);
 		layer_complete = false;
 
-		while (not layer_complete) do
+		while (not (layer_complete or low_fuel)) do
 
 			-- we store these not to make too many calls
 			curr_offset_x = navigation.offset_get_x();
@@ -116,14 +110,14 @@ local initial_step_ahead = tonumber(argv[4]);
 
 					for slot_idx = 1, 16 do
 
-						turtle.select(slot_idx);
 						slot_info = turtle.getItemDetail(slot_idx);
 						previous_fuel_level = turtle.getFuelLevel();
 
 						if (slot_info) then
-							if (blacklisted_fuels[string.upper(slot_info.name)] == nil) then
+							if (navigation.blacklisted_fuels[string.upper(slot_info.name)] == nil) then
 								if (previous_fuel_level < turtle.getFuelLimit()) then
 									-- we refuel if possible, desirable and needed
+									turtle.select(slot_idx);
 									if (turtle.refuel()) then
 										print("Refueled " .. (turtle.getFuelLevel() - previous_fuel_level) .. " units from slot " .. slot_idx .. " (" .. slot_info.name ..")");
 										print("New fuel level: " .. turtle.getFuelLevel());
@@ -135,6 +129,7 @@ local initial_step_ahead = tonumber(argv[4]);
 
 
 							if (blacklisted_blocks[string.upper(slot_info.name)]) then
+								turtle.select(slot_idx);
 								print("Item `" .. slot_info.name .. "` at slot " .. slot_idx .. " is blacklisted. Dropping");
 								turtle.drop();
 							end;
