@@ -9,7 +9,7 @@ local update_files = {
 	"update_zc",
 	"lib/inventory",
 	"lib/navigation",
-	"bin/dig_box"
+	"bin/dig_box",
 	"bin/plant_trees"
 };
 
