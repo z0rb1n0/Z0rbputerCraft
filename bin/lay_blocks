@@ -15,8 +15,8 @@ local initial_step_x = tonumber(argv[6]);
 local initial_step_y = tonumber(argv[7]);
 
 
-	if (initial_step_x == nil) then initial_step_x = 1; end;
-	if (initial_step_y == nil) then initial_step_y = 1; end;
+	if (initial_step_x == nil) then initial_step_x = 0; end;
+	if (initial_step_y == nil) then initial_step_y = 0; end;
 	if (block_stride_x == nil) then	block_stride_x = 1;	end;
 	if (block_stride_y == nil) then	block_stride_y = 1;	end;
 	
@@ -33,7 +33,7 @@ local initial_step_y = tonumber(argv[7]);
 		print("Usage:");
 		print("    lay_blocks <block_name> <size_x> <size_y> [ block_stride_x = 1 [ block_stride_y = 1 [ initial_step_x = 1 [ initial_step_y = 1 ]]]]");
 		print("");
-		print("(size/stride values must be positive, step values must be nonnegative)");
+		print("(size/stride values must be positive, initial step values must be nonnegative)");
 		return 1;
 	end;
 
@@ -61,7 +61,8 @@ local initial_step_y = tonumber(argv[7]);
 	navigation.offset_force_z(0); -- this doesn't count
 
 	local step_loop;
-	-- let's move ahead as much as it takes
+
+	-- let's move ahead and sideways as much as it takes
 	if (initial_step_y > 0) then
 		for step_loop = 1, initial_step_y do
 			navigation.dig_and_go("N");

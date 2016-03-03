@@ -1,6 +1,6 @@
 
 -- The following is a representation of how we start (for each layer)
--- (The caret symbol is the turtle at start, with initial_step_ahead set to 1).
+-- (The caret symbol is the turtle at start, with initial_step_y set to 1).
 -- Higher numbers increase the distance
 -- A 0 degrees heading means facing "north" IN THIS REFERENCE FRAME, NOT MINECRAFT
 --  ########
@@ -31,36 +31,48 @@ local argv = { ... };
 local size_x = tonumber(argv[1]);
 local size_y = tonumber(argv[2]);
 local target_layer = tonumber(argv[3]);
-local initial_step_ahead = tonumber(argv[4]);
+local initial_step_x = tonumber(argv[4]);
+local initial_step_y = tonumber(argv[5]);
 
 
-	if (target_layer == nil) then
-		target_layer = 0;
-	end;
-
-	if (initial_step_ahead == nil) then
-		initial_step_ahead = 1;
-	end;
+	if (target_layer == nil) then target_layer = 0;	end;
+	if (initial_step_x == nil) then initial_step_x = 0; end;
+	if (initial_step_y == nil) then initial_step_y = 0; end;
 
 
-	if (((size_x == nil) or (size_x < 1)) or ((size_y == nil) or (size_y < 1)) or ((initial_step_ahead == nil) or (initial_step_ahead < 1))) then
+	if (
+		((size_x == nil) or (size_x < 1)) or
+		((size_y == nil) or (size_y < 1)) or
+		((initial_step_y == nil) or (initial_step_y < 0)) or
+		((initial_step_x == nil) or (initial_step_x < 0))
+	) then
 		print("Usage:");
-		print("    dig_box <size_x> <size_y> [ target_layer = 0 [ initial_step_ahead = 1 ]]");
-		print("    (X/Y/stepahead values must be positive)");
+		print("    dig_box <size_x> <size_y> [ target_layer = 0 [ initial_step_x = 1 [ initial_step_y = 1 ]]]");
+		print("    (X/Y/initial step values must be nonnegative)");
 		return 1;
 	end;
 
+	
+	print("Moving to initial square");
 
-	print("Positioning to initial square");
-	local step_ahead_loop;
-	-- let's move ahead as much as it takes
-	for step_ahead_loop = 1, initial_step_ahead do
-		navigation.dig_and_go("N");
-		navigation.offset_force_y(0); -- this doesn't count
+	local step_loop;
+
+	-- let's move ahead and sideways as much as it takes
+	if (initial_step_y > 0) then
+		for step_loop = 1, initial_step_y do
+			navigation.dig_and_go("N");
+			navigation.offset_force_y(0); -- this doesn't count
+		end;
+	end;
+
+	if (initial_step_x > 0) then
+		for step_loop = 1, initial_step_x do
+			navigation.dig_and_go("E");
+			navigation.offset_force_x(0); -- this doesn't count
+		end;
 	end;
 
 
-	print("Initial square reached");
 	print("Digging " .. size_x .. "x" .. size_y .. "x" .. (math.abs(target_layer) + 1) .. " cavity");
 	
 
@@ -177,7 +189,7 @@ local initial_step_ahead = tonumber(argv[4]);
 			end;
 
 
-			if (turtle.getFuelLevel() < (initial_step_ahead + math.abs(curr_offset_x) + math.abs(curr_offset_y) + math.abs(curr_offset_z))) then
+			if (turtle.getFuelLevel() < (initial_step_y + math.abs(curr_offset_x) + math.abs(curr_offset_y) + math.abs(curr_offset_z))) then
 				low_fuel = true;
 				print("Fuel level barely sufficient to return to base. Returning to starting point");
 			end;
@@ -202,7 +214,14 @@ local initial_step_ahead = tonumber(argv[4]);
 	navigation.back_to_start();
 
 	-- let's move back to the starting point
-	for step_ahead_loop = 1, initial_step_ahead do
-		navigation.dig_and_go("S");
+	if (initial_step_x > 0) then
+		for step_ahead_loop = 1, initial_step_x do
+			navigation.dig_and_go("W");
+		end;
+	end;
+	if (initial_step_y > 0) then
+		for step_ahead_loop = 1, initial_step_y do
+			navigation.dig_and_go("S");
+		end;
 	end;
 	navigation.heading_set("N");
