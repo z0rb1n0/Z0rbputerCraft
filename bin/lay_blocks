@@ -25,15 +25,15 @@ local initial_step_y = tonumber(argv[7]);
 		(block_name == nil) or
 		((size_x == nil) or (size_x < 1)) or
 		((size_y == nil) or (size_y < 1)) or
-		((initial_step_y == nil) or (initial_step_y < 1)) or
-		((initial_step_x == nil) or (initial_step_x < 1)) or
-		((block_stride_x == nil) or (block_stride_x < 1)) or
-		((block_stride_y == nil) or (block_stride_y < 1))
+		((initial_step_y == nil) or (initial_step_y < 0)) or
+		((initial_step_x == nil) or (initial_step_x < 0)) or
+		((block_stride_x == nil) or (block_stride_x < 0)) or
+		((block_stride_y == nil) or (block_stride_y < 0))
 	) then
 		print("Usage:");
 		print("    lay_blocks <block_name> <size_x> <size_y> [ block_stride_x = 1 [ block_stride_y = 1 [ initial_step_x = 1 [ initial_step_y = 1 ]]]]");
 		print("");
-		print("(size/stride/step values must be positive)");
+		print("(size/stride values must be positive, step values must be nonnegative)");
 		return 1;
 	end;
 
@@ -43,11 +43,14 @@ local initial_step_y = tonumber(argv[7]);
 	local columns_count = math.floor(size_x / block_stride_x); if ((size_x % block_stride_x) > 0) then columns_count = (columns_count + 1); end;
 	local rows_count = math.floor(size_y / block_stride_y); if ((size_y % block_stride_y) > 0) then rows_count = (rows_count + 1); end;
 
+	local items_available = inventory.count_items(block_name)
 	print("    " ..  rows_count .. " rows");
 	print("    " ..  columns_count .. " columns");
-	print("    " ..  (columns_count * rows_count) .. " total blocks");
+	print("    " ..  (columns_count * rows_count) .. " total blocks needed");
+	print("    " ..  items_available .. " blocks available");
 	
-	if (inventory.count_items(block_name) < math.floor(math.floor((size_x * size_y) / block_stride_x) / block_stride_y)) then
+
+	if (items_available < math.floor(math.floor((size_x * size_y) / block_stride_x) / block_stride_y)) then
 		print("Insufficient blocks of the specified type for the area size and stride");
 		return false;
 	end;
@@ -59,14 +62,18 @@ local initial_step_y = tonumber(argv[7]);
 
 	local step_loop;
 	-- let's move ahead as much as it takes
-	for step_loop = 1, initial_step_y do
-		navigation.dig_and_go("N");
-		navigation.offset_force_y(0); -- this doesn't count
+	if (initial_step_y > 0) then
+		for step_loop = 1, initial_step_y do
+			navigation.dig_and_go("N");
+			navigation.offset_force_y(0); -- this doesn't count
+		end;
 	end;
 
-	for step_loop = 1, initial_step_x do
-		navigation.dig_and_go("E");
-		navigation.offset_force_x(0); -- this doesn't count
+	if (initial_step_x > 0) then
+		for step_loop = 1, initial_step_x do
+			navigation.dig_and_go("E");
+			navigation.offset_force_x(0); -- this doesn't count
+		end;
 	end;
 
 	print("Laying down " .. size_x .. "x" .. size_y .. "`" .. block_name .. "` every " .. block_stride_x .. "x and " .. block_stride_y .. "y");
@@ -182,11 +189,15 @@ local initial_step_y = tonumber(argv[7]);
 	navigation.back_to_start();
 
 	-- let's move back to the starting point
-	for step_ahead_loop = 1, initial_step_x do
-		navigation.dig_and_go("W");
+	if (initial_step_x > 0) then
+		for step_ahead_loop = 1, initial_step_x do
+			navigation.dig_and_go("W");
+		end;
 	end;
-	for step_ahead_loop = 1, initial_step_y do
-		navigation.dig_and_go("S");
+	if (initial_step_y > 0) then
+		for step_ahead_loop = 1, initial_step_y do
+			navigation.dig_and_go("S");
+		end;
 	end;
 	navigation.heading_set("N");
 	navigation.dig_and_go("D");
