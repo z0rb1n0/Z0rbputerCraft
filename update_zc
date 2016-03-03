@@ -10,7 +10,7 @@ local update_files = {
 	"lib/inventory",
 	"lib/navigation",
 	"bin/dig_box",
-	"bin/plant_trees"
+	"bin/lay_blocks"
 };
 
 
