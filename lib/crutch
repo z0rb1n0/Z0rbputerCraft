@@ -1,0 +1,15 @@
+-- functions to overcome the limitations of lua
+
+
+-- generic table count, as #the_table only counts pure array elements
+function table_count(the_table)
+local k; local v;
+local tk = {};
+
+	for k, v in pairs(the_table) do
+		print(k);
+		table.insert(tk, k);
+	end;
+
+	return #tk;
+end;

@@ -142,7 +142,7 @@ local initial_step_y = tonumber(argv[7]);
 
 					if (slot_info) then
 						if (navigation.blacklisted_fuels[string.upper(slot_info.name)] == nil) then
-							if (previous_fuel_level < (turtle.getFuelLimit() / 2)) then
+							if (previous_fuel_level < (turtle.getFuelLimit() - 5000)) then
 								-- we refuel if possible, desirable and needed
 								if (turtle.refuel()) then
 									print("Refueled " .. (turtle.getFuelLevel() - previous_fuel_level) .. " units from slot " .. slot_idx .. " (" .. slot_info.name ..")");

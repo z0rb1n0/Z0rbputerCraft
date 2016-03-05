@@ -1,4 +1,7 @@
-# library of functions that allow navigation
+# inventory utilities
+
+-- unfortunately, "/lib" has to be hard coded here (shell.getRunningProgram() doesn't work from within APIs)
+
 
 -- returns the name of the currently selected item, or nil if there is none
 function current_item()
@@ -58,6 +61,74 @@ ret_val = nil;
 		end;
 
 	end;
+
+	return ret_val;
+
+end;
+
+
+-- repacks inventory slots from scattered stacks, if there are any
+function repack()
+ret_val = nil;
+
+	local slot_idx;
+	local slot_headrooms = {};
+
+	-- we populate a table indexed by block name:damage ("damage" in many cases means variant). Each member in turn is a table with 2 members:
+	--     slot: the lowest slot number containing an incomplete stack of the indexed entity
+	--     headroom: the number of items that can be added until the slot is full
+	-- Entities for which there are no slots with headroom are not in the table
+
+	-- we go through all slots...
+	for slot_idx = 1, 16 do
+
+		local slot_info = turtle.getItemDetail(slot_idx);
+		local used_space = turtle.getItemCount(slot_idx);
+
+		if (slot_info and (used_space > 0)) then
+
+			local item_key = (slot_info.name .. ":" .. slot_info.damage);
+
+			-- we find out whether we know of any previous slot
+			-- that could fit more of the current item
+			if (slot_headrooms[item_key]) then
+
+				-- yes. We move how much stuff from this slot as we can fit there
+				local move_items = slot_headrooms[item_key]["headroom"];
+				if (move_items > used_space) then move_items = used_space; end;
+				turtle.select(slot_idx);
+				turtle.transferTo(slot_headrooms[item_key]["slot"], move_items);
+				
+				used_space = turtle.getItemCount(slot_idx); -- refresh the counter here
+				
+				-- did we fill the other slot? if so, we remove it from the headrooms list,
+				-- and chances are that the current slot is now partially full and SHOULD become the headroom,
+				-- but that will be sorted later on).
+				-- If we just added some elements there but it's still not full, we update the count
+				local target_space = turtle.getItemSpace(slot_headrooms[item_key]["slot"]);
+				if (target_space == 0) then
+					slot_headrooms[item_key] = nil;
+				else
+					-- we didn't fill it yet. We need to update the headrooms table
+					slot_headrooms[item_key]["headroom"] = target_space;
+				end
+
+			end;
+
+			-- if the current slot still has some items but is not full, it becomes the new headroom place for the current item
+			local free_space = turtle.getItemSpace(slot_idx);
+			if ((turtle.getItemCount(slot_idx) > 0) and (free_space > 0)) then
+				-- we need to refresh the information
+				slot_info = turtle.getItemDetail(slot_idx);
+				slot_headrooms[item_key] = {
+					["slot"] = slot_idx,
+					["headroom"] = free_space
+				};
+			end;
+		end;
+	end;
+
+
 
 	return ret_val;
 

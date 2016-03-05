@@ -11,7 +11,7 @@
 
 
 os.loadAPI("/" .. fs.getDir(shell.getRunningProgram()) .. "/../lib/navigation");
-
+os.loadAPI("/" .. fs.getDir(shell.getRunningProgram()) .. "/../lib/inventory");
 
 local blacklisted_blocks = {
 	["MINECRAFT:ANDESITE"] = true,
@@ -127,7 +127,7 @@ local initial_step_y = tonumber(argv[5]);
 
 						if (slot_info) then
 							if (navigation.blacklisted_fuels[string.upper(slot_info.name)] == nil) then
-								if (previous_fuel_level < turtle.getFuelLimit()) then
+								if (previous_fuel_level < (turtle.getFuelLimit() - 5000)) then
 									-- we refuel if possible, desirable and needed
 									turtle.select(slot_idx);
 									if (turtle.refuel()) then
@@ -135,21 +135,24 @@ local initial_step_y = tonumber(argv[5]);
 										print("New fuel level: " .. turtle.getFuelLevel());
 									end;
 								end;
-							else
-								print("Fuel `" .. slot_info.name .. "` at slot " .. slot_idx .. " is blacklisted");
+							--else
+								--print("Fuel `" .. slot_info.name .. "` at slot " .. slot_idx .. " is blacklisted");
 							end;
 
 
 							if (blacklisted_blocks[string.upper(slot_info.name)]) then
 								turtle.select(slot_idx);
-								print("Item `" .. slot_info.name .. "` at slot " .. slot_idx .. " is blacklisted. Dropping");
+								print("Dropping blacklisted item `" .. slot_info.name .. "` from slot " .. slot_idx);
 								turtle.drop();
 							end;
 
 						end;
 						
-						
 					end;
+					
+					print("Repacking inventory");
+					inventory.repack();
+
 				else
 					-- this is just the end of a column. We just shift one column and invert N/S
 					if (returning_x) then
