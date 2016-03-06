@@ -203,7 +203,7 @@ local ret_val = nil;
 		end;
 
 		
-		if (ret_val ~= true) then
+		if ((ret_val == nil) or (not ret_val)) then
 			print("Movement order failed. Enforcing a one second sleep and trying again");
 			sleep(1);
 		end;
