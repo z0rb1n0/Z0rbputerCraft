@@ -134,8 +134,8 @@ local ret_val = nil;
 
 		if ((direction ~= "U") and (direction ~= "D")) then
 			if (not heading_set(direction)) then
+				ret_val = false;
 				print("Call to `heading_set()` failed");
-				return false;
 			end;
 		end;
 
@@ -145,8 +145,8 @@ local ret_val = nil;
 			-- we dig ahead and go there
 			if (turtle.detect()) then
 				if (not turtle.dig()) then
+					ret_val = false;
 					print("Failed to dig ahead");
-					return false;
 				end;
 			end;
 
@@ -162,8 +162,8 @@ local ret_val = nil;
 				end;
 				ret_val = true;
 			else
+				ret_val = false;
 				print("Failed to move ahead");
-				return false;
 			end;
 
 		else
@@ -179,22 +179,22 @@ local ret_val = nil;
 					offset_z = (offset_z + 1);
 					ret_val = true;
 				else
+					ret_val = false;
 					print("Failed to move up");
-					return false;
 				end;
 			elseif (direction == "D") then
 				if (turtle.detectDown()) then
 					if (not turtle.digDown()) then
+						ret_val = false;
 						print("Failed to dig down");
-						return false;
 					end;
 				end;
 				if (turtle.down()) then
 					offset_z = (offset_z - 1);
 					ret_val = true;
 				else
+					ret_val = false;
 					print("Failed to move down");
-					return false;
 				end;
 			else
 				print("Unsupported direction: " .. direction);
@@ -208,6 +208,8 @@ local ret_val = nil;
 			sleep(1);
 		end;
 	end;
+	
+	ret_val = true; -- we're out of the loop
 
 	return ret_val;
 end
