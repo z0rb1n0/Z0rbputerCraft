@@ -9,8 +9,10 @@ local update_files = {
 	"update_zc",
 	"startup",
 	"lib/crutch",
+	"lib/entities",
 	"lib/inventory",
 	"lib/navigation",
+	"lib/construction",
 	"bin/dig_box",
 	"bin/inventory_repack",
 	"bin/lay_blocks"

@@ -1,0 +1,293 @@
+# inventory utilities
+
+-- unfortunately, "/lib" has to be hard coded here (shell.getRunningProgram() doesn't work from within APIs)
+os.loadAPI("/lib/entities");
+os.loadAPI("/lib/navigation");
+os.loadAPI("/lib/inventory");
+
+
+-- this is a "place" function that never gives up until it did its job.
+-- direction can be F U or D
+-- it requires a block name 
+function place_block(direction, block)
+local block_placed = false;
+
+	local current_item = inventory.current_item();
+	local w_block = entities.canonicalize(block);
+	if ((current_item == nil) or (current_item ~= w_block)) then
+		local block_slot = inventory.find_item(entities.canonicalize(block));
+		while (block_slot == nil) do
+			print("Could not locate any item of type " .. entities.canonicalize(block) .. ". Sleeping for 10 secons before retrying");
+			sleep(10);
+		end;
+		turtle.select(block_slot);
+	end;
+
+
+	while (not block_placed) do
+		if (string.upper(direction) == "F") then
+			block_placed = turtle.place();
+		elseif (string.upper(direction) == "U") then
+			block_placed = turtle.placeUp();
+		elseif (string.upper(direction) == "D") then
+			block_placed = turtle.placeDown();
+		else
+			print("Invalid direction specified");
+			return false;
+		end;
+
+		if (not block_placed) then
+			print("Block placement failed. Will attempt again in 10 seconds");
+			sleep(10);
+		end;
+
+	end;
+	
+	return block_placed;
+end;
+
+
+
+
+-- bp_* (Build Primitive) family of functions are hardcoded building blocks
+-- that define common components. It'd be much better to define a blueprint format and
+-- make everything dynamic, however some limitations in the API prevent the collection fo some
+-- important metadata (say, orientation of wall-mounted torches)
+
+-- all the bp_* functions have to mode:
+-- "materials" mode: the default, does nothing more than return a table with the required goods and quantities (indexed by a mod:block_name:damage string)
+-- "build" mode: actually does the job and returns a success boolean
+
+-- In case of primitives that capable of being tiled/chained, such as flights of stairs,
+-- have a "loop" mode: instead of going back to base, the turtle positions itself at the starting point of the next piece
+-- once finished and resets the coordinate system for a new loop. Additionally, some primitives are slightly different when
+-- in loop mode to make them more consistent across cycles (normally in the form of additional "structural" elements)
+-- Loop mode is activated by supplying a value of "loops" > 0 (this allows one to create a single loop)
+
+-- In the reference frame of the project, the turtle is initially facing north from is one block
+-- "south" of 0, 0.
+
+
+
+-- bp_spiral_rail()
+-- builds a single flight of rail shaft, or any number of them
+function bp_spiral_rail(mode, loops)
+local ret_val = nil;
+
+local shopping_list = {
+	["minecraft:planks:0"] = 10,
+	["minecraft:torch:0"] = 1,
+	["minecraft:redstone_torch:0"] = 1,
+	["minecraft:rail:0"] = 3,
+	["minecraft:golden_rail:0"] = 1
+
+};
+
+
+	call_mode = mode;
+	if (call_mode == nil) then
+		call_mode = "MATERIALS";
+	end;
+
+	p_loops = loops;
+	if (p_loops == nil) then
+		p_loops = 0;
+	end;
+
+
+	local slk; local slv;
+
+	-- in loop mode, we need 9 more planks per loop. Also, we multiply the requirements
+	if (p_loops > 0) then
+		shopping_list["minecraft:planks:0"] = (shopping_list["minecraft:planks:0"] + 9);
+		for slk, slv in pairs(shopping_list) do
+			shopping_list[slk] = (shopping_list[slk] * p_loops);
+		end;
+	end;
+
+	if (string.upper(call_mode) == "BUILD") then
+
+		-- we call ourserlves to get the list of required goods. Unfortunately
+		-- the language doesn't seem to be reflective so we need to hard code
+		if (inventory.check_shopping_list(shopping_list)) then
+
+			if (p_loops == 0) then
+				loops_left = 1; -- special case for 0
+			else
+				loops_left = p_loops;
+			end
+
+			for loop_n = loops_left, 1, -1 do
+		
+				navigation.dig_and_go("U");
+				navigation.dig_and_go("N");
+				navigation.dig_and_go("N");
+				navigation.dig_and_go("E");
+				construction.place_block("D", "planks");
+				navigation.dig_and_go("E");
+				construction.place_block("D", "planks");
+				navigation.dig_and_go("E");
+				construction.place_block("D", "planks");
+				construction.place_block("F", "planks");
+				navigation.dig_and_go("S");
+				construction.place_block("D", "planks");
+				navigation.heading_set("N");
+				construction.place_block("F", "planks");
+				navigation.dig_and_go("U");
+				construction.place_block("D", "planks");
+				navigation.dig_and_go("N");
+				navigation.dig_and_go("N");
+				construction.place_block("D", "torch");
+				if (p_loops > 0) then
+					-- loop mode requires us to build the columns
+					navigation.dig_and_go("E");
+					navigation.dig_and_go("E");
+					navigation.dig_and_go("N");
+					navigation.heading_set("E");
+					navigation.dig_and_go("D");
+					navigation.dig_and_go("D");
+					construction.place_block("F", "planks");
+					navigation.dig_and_go("U");
+					construction.place_block("F", "planks");
+					navigation.dig_and_go("U");
+					construction.place_block("F", "planks");
+					navigation.dig_and_go("W");
+					navigation.dig_and_go("W");
+					navigation.dig_and_go("N");
+					navigation.dig_and_go("N");
+					construction.place_block("F", "planks");
+					navigation.dig_and_go("D");
+					construction.place_block("F", "planks");
+					navigation.dig_and_go("D");
+					construction.place_block("F", "planks");
+					navigation.dig_and_go("S");
+					navigation.dig_and_go("S");
+					navigation.dig_and_go("W");
+					navigation.dig_and_go("W");
+					construction.place_block("F", "planks");
+					navigation.dig_and_go("U");
+					construction.place_block("F", "planks");
+					navigation.dig_and_go("U");
+					construction.place_block("F", "planks");
+					navigation.dig_and_go("S");
+					navigation.dig_and_go("D");
+				else
+					-- if there is no need for columns, we just move to the beginning of the rail
+					navigation.dig_and_go("W");
+					navigation.dig_and_go("W");
+					navigation.dig_and_go("D");
+				end;
+				construction.place_block("D", "rail");
+				navigation.dig_and_go("U");
+				navigation.dig_and_go("S");
+				construction.place_block("D", "rail");
+				navigation.dig_and_go("E");
+				navigation.dig_and_go("D");
+				navigation.heading_set("S");
+				construction.place_block("F", "redstone_torch");
+				navigation.dig_and_go("U");
+				construction.place_block("D", "golden_rail");
+				navigation.dig_and_go("E");
+				construction.place_block("F", "planks");
+				navigation.heading_set("S");
+				construction.place_block("F", "planks");
+				navigation.dig_and_go("U");
+				construction.place_block("D", "rail");
+				navigation.dig_and_go("E");
+				navigation.dig_and_go("E");
+				construction.place_block("D", "planks");
+
+				
+				if (p_loops > 0) then
+					navigation.dig_and_go("E");
+					navigation.dig_and_go("E");
+					navigation.dig_and_go("S");
+					navigation.heading_set("W");
+
+					-- we need to reset the coordinate system before another round
+					navigation.heading_force("N");
+					navigation.offset_force_x(0);
+					navigation.offset_force_y(0);
+					navigation.offset_force_z(0);
+				else
+					-- no loop.
+					-- we move to a safe place for the return home not to destroy blocks
+					-- and go back to the original position and heading
+					navigation.dig_and_go("S");
+					navigation.dig_and_go("S");
+					navigation.back_to_start();
+					navigation.heading_set("N");
+				end;
+			end;
+			ret_val = true;
+		else
+			print("Insufficient materials. Requirements for spiral_rail_flight follow:");
+			for slk, slv in pairs(shopping_list) do
+				print("    " .. slk .. ": " .. slv);
+			end;
+			ret_val = false;
+		end;
+	else
+		-- we finally put together the "shopping list"
+		ret_val = shopping_list;
+	end;
+
+	return ret_val;
+		
+
+end;
+
+
+
+
+
+
+
+
+
+-- template_to_project()
+--~ -- scans a volume (top to bottom as some blocks are subject to gravity and would
+--~ -- otherwise shift down) and returns a serialized definition of the blocks/positions
+--~ -- Unfortunately CC's APIs does not seem to have a way to retrieve, say, the orientation
+--~ -- of a torch on the wall, so those special block properties cannot be reconstructed for now
+--~ -- The turtle initially facing north from is one block "south" of 0, 0
+--~ -- on the highest level of the template (coordinates grow left-to-right, bottom-to-top)
+--~ function template_to_project(size_x, size_y, size_z)
+--~ local ret_val = nil;
+--~ local p_table = nil;
+
+
+
+--~ 	if (
+--~ 		((tonumber(size_x) == nil) or (tonumber(size_x) < 1)) or
+--~ 		((tonumber(size_y) == nil) or (tonumber(size_y) < 1)) or
+--~ 		((tonumber(size_z) == nil) or (tonumber(size_z) < 1))
+--~ 	) then
+--~ 		print("All dimensions must be positive");
+--~ 		return false;
+--~ 	end;
+
+--~ 	-- p-table is our internal hierarchical representation of the project.
+--~ 	-- 2 root members exist: "metadata", containing generic information about the project,
+--~ 	-- such as the "dimensions" sub-table, and "blocks", a z->x->y Lua table path ultimately containing
+--~ 	-- the block name
+--~ 	p_table = {
+--~ 		["metadata"] = {
+--~ 			["dimensions"] = {
+--~ 				["x"] = size_x,
+--~ 				["y"] = size_y,
+--~ 				["z"] = size_z
+--~ 			}
+--~ 		},
+--~ 		["blocks"] = {}
+--~ 	};
+
+
+--~ 	-- now we enter the structure and start destructively scanning it (the first block is an exception)
+--~ 	navigation.dig_and_go("N");
+--~ 	navigation.offset_force_y(0); -- this does not count as we're positioning ourselves
+--~ 	for 
+--~ 	
+
+--~ 	return ret_val;
+--~ end;

@@ -1,0 +1,23 @@
+os.loadAPI("/" .. fs.getDir(shell.getRunningProgram()) .. "/../lib/inventory");
+os.loadAPI("/" .. fs.getDir(shell.getRunningProgram()) .. "/../lib/navigation");
+--os.loadAPI("/" .. fs.getDir(shell.getRunningProgram()) .. "/../lib/entities");
+os.loadAPI("/" .. fs.getDir(shell.getRunningProgram()) .. "/../lib/construction");
+
+
+
+local argv = { ... };
+
+	local ret_val = construction.bp_spiral_rail(argv[1], tonumber(argv[2]));
+	
+	if (argv[1] == nil) then
+		print("Usage:");
+		print("    build_spiral_rail { <materials> | <build> } [ number of loops ]")
+	else
+		local ik; local iv;
+		if (not (string.upper(argv[1]) == "BUILD")) then
+			print("Material requirements:");
+			for ik, iv in pairs(ret_val) do
+				print(ik .. string.rep(".", (38 - (string.len(ik) + string.len(iv)))) .. iv);
+			end;
+		end;
+	end;

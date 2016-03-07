@@ -1,0 +1,38 @@
+-- generic functions to handle in-game resources
+
+
+-- entities are prefixed by a qualifier (such as `minecraft` for vanilla ones).
+-- Technically, an entity name is qualified by the variant too. In fact a full path is
+-- something like `<mod>:<block>:<variant/damage>`.
+-- This function simply resolves the first of many overlapping names according to a
+-- "search path". Currently hardcoded to "minecraft" and variant 0 :-)
+function canonicalize(unresolved_name)
+local ret_val = nil;
+
+local next_word;
+local fields = {};
+
+	-- this is slow, but Lua kinda sucks with syntactic sugar and optimization shorthands
+	for next_word in string.gmatch(unresolved_name, "[^:]+") do
+		table.insert(fields, next_word);
+	end;
+
+
+	if (#fields == 1) then
+		-- this is a totally unqualified name.
+		ret_val = ("minecraft:" .. fields[1] .. ":0");
+	elseif (#fields == 2) then
+		-- the following criterion is ugly as the name could technically be a number, but we cannot do much else at this stage
+		if (string.find(fields[2], "^[0-9]+$") == nil) then
+			ret_val = (fields[1] .. ":" .. fields[2] .. ":0");
+		else
+			ret_val = ("minecraft:" .. fields[1] .. ":" .. fields[2]);
+		end;
+	else
+		ret_val = (fields[1] .. ":" .. fields[2] .. ":" .. fields[3]);
+	end;
+
+
+	return string.lower(ret_val);
+
+end;

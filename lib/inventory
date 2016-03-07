@@ -1,6 +1,7 @@
 # inventory utilities
 
 -- unfortunately, "/lib" has to be hard coded here (shell.getRunningProgram() doesn't work from within APIs)
+os.loadAPI("/lib/entities");
 
 
 -- returns the name of the currently selected item, or nil if there is none
@@ -10,11 +11,12 @@ ret_val = nil;
 	local slot_info = turtle.getItemDetail(slot_idx);
 	
 	if (slot_info and string.len(slot_info.name)) then
-		return slot_info.name;
+		return (entities.canonicalize(slot_info.name .. ":" .. slot_info.damage));
 	end;
 	return ret_val;
 
 end;
+
 
 -- counts total occurrences. Counts all items if item_name is nil
 function count_items(item_name)
@@ -31,7 +33,7 @@ local ret_val = 0;
 		slot_info = turtle.getItemDetail(slot_idx);
 
 		if (slot_info) then
-			if ((item_name == nil) or (string.upper(string.upper(slot_info.name)) == string.upper(item_name))) then
+			if ((item_name == nil) or ((slot_info.name .. ":" .. slot_info.damage) == entities.canonicalize(item_name))) then
 				ret_val = (ret_val + slot_info.count);
 			end;
 		end;
@@ -55,7 +57,7 @@ ret_val = nil;
 		slot_info = turtle.getItemDetail(slot_idx);
 
 		if (slot_info) then
-			if (string.upper(string.upper(slot_info.name)) == string.upper(item_name)) then
+			if ((slot_info.name .. ":" .. slot_info.damage) == entities.canonicalize(item_name)) then
 				return slot_idx;
 			end;
 		end;
@@ -132,4 +134,50 @@ ret_val = nil;
 
 	return ret_val;
 
+end;
+
+
+
+
+-- returns a table with the list of the total quantities, indexed by name+damage (variant)
+function dump()
+local ret_val = {};
+
+	local slot_idx;
+
+	for slot_idx = 1, 16 do
+
+		local slot_info = turtle.getItemDetail(slot_idx);
+		local amount = turtle.getItemCount(slot_idx);
+		if (slot_info and (amount > 0)) then
+			local item_key = (slot_info.name .. ":" .. slot_info.damage);
+			if (ret_val[item_key] == nil) then
+				ret_val[item_key] = 0;
+			end
+			ret_val[item_key] = (ret_val[item_key] + amount);
+		end;
+
+	end;
+	
+	return ret_val;
+end;
+
+
+
+-- Tiven a shopping list in the same format as the output of dump()
+-- returns true only if the list can be fullfilled from the inventory.
+-- Damage/variant MUST be specified
+function check_shopping_list(shopping_list)
+local lk; local lv; local c_lk;
+
+	local inv_dump = inventory.dump();
+
+	for lk, lv in pairs(shopping_list) do
+		if ((inv_dump[lk] == nil) or (inv_dump[lk] < lv)) then
+			return false;
+		end;
+	
+	end;
+
+	return true;
 end;
