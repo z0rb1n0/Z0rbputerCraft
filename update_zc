@@ -15,7 +15,8 @@ local update_files = {
 	"lib/construction",
 	"bin/dig_box",
 	"bin/inventory_repack",
-	"bin/lay_blocks"
+	"bin/lay_blocks",
+	"bin/build_spiral_rail"
 };
 
 
