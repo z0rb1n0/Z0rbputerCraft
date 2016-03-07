@@ -11,14 +11,14 @@ ret_val = nil;
 	local slot_info = turtle.getItemDetail(slot_idx);
 	
 	if (slot_info and string.len(slot_info.name)) then
-		return (entities.canonicalize(slot_info.name .. ":" .. slot_info.damage));
+		return (slot_info.name .. ":" .. slot_info.damage);
 	end;
 	return ret_val;
 
 end;
 
 
--- counts total occurrences. Counts all items if item_name is nil
+-- counts total pieces of the supplied item in inventory. Counts all items if item_name is nil
 function count_items(item_name)
 local ret_val = 0;
 
@@ -39,7 +39,7 @@ local ret_val = 0;
 		end;
 
 	end;
-	
+
 	return ret_val;
 
 end;
@@ -164,7 +164,7 @@ end;
 
 
 
--- Tiven a shopping list in the same format as the output of dump()
+-- Given a shopping list in the same format as the output of dump()
 -- returns true only if the list can be fullfilled from the inventory.
 -- Damage/variant MUST be specified
 function check_shopping_list(shopping_list)

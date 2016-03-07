@@ -1,6 +1,7 @@
 
 
 
+os.loadAPI("/" .. fs.getDir(shell.getRunningProgram()) .. "/../lib/entities");
 os.loadAPI("/" .. fs.getDir(shell.getRunningProgram()) .. "/../lib/inventory");
 os.loadAPI("/" .. fs.getDir(shell.getRunningProgram()) .. "/../lib/navigation");
 
@@ -37,6 +38,8 @@ local initial_step_y = tonumber(argv[7]);
 		return 1;
 	end;
 
+	-- we fix the path once and for all
+	block_name = entities.canonicalize(block_name);
 
 	print("Checking for sufficient resources");
 	-- plain division. if there's a remainder, that counts as another row
@@ -48,7 +51,7 @@ local initial_step_y = tonumber(argv[7]);
 	print("    " ..  columns_count .. " columns");
 	print("    " ..  (columns_count * rows_count) .. " total blocks needed");
 	print("    " ..  items_available .. " blocks available");
-	
+
 
 	if (items_available < math.floor(math.floor((size_x * size_y) / block_stride_x) / block_stride_y)) then
 		print("Insufficient blocks of the specified type for the area size and stride");
@@ -104,13 +107,13 @@ local initial_step_y = tonumber(argv[7]);
 		-- unfortunately we need to check if we still have blocks in our slot on every loop
 		local curr_item = inventory.current_item();
 
-		if ((curr_item == nil) or (string.upper(inventory.current_item()) ~= "block_name")) then
+		if ((curr_item == nil) or (inventory.current_item() ~= block_name)) then
 			print("Slot " .. turtle.getSelectedSlot() .. " ran out of `" .. block_name .. "` in the current slot. Switching to the next available stack");
 			turtle.select(inventory.find_item(block_name));
 		end;
 
 
-		-- if all is well below, we plant the sapling
+		-- if all is well below, we plant block
 		if (turtle.detectDown()) then
 			print("Block below is occupied at offset " .. curr_offset_x .. ":" .. curr_offset_y .. ". Skipping");
 		else
