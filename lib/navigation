@@ -136,33 +136,137 @@ function offset_force_z(new_offset)
 end;
 
 
+-- scans the supplied direction (initials for forward, up and down) and if there is a block there
+-- attempts to dig it. If the block happens to be lava or flowing lava with metadata 0 (source block)
+-- and there is an empty bucket in the inventory, the lava is immediately collected and converted into fuel.
+-- This happens even in case the tank is already full as it'd be wasted anyway
+-- In order not to break digging loops, returns true if an attempt is made to dig into air
+function greedy_dig(direction)
+ret_val = nil;
+
+	if (direction == nil) then
+		w_dir = "";
+	else
+		w_dir = string.upper(direction);
+	end;
+
+	-- the function changes based on the direction
+	local f_inspect; local f_dig;
+	if (w_dir == "F") then
+		f_inspect = turtle.inspect
+		f_dig = turtle.dig
+		f_place = turtle.place
+	elseif (w_dir == "U") then
+		f_inspect = turtle.inspectUp
+		f_dig = turtle.digUp
+		f_place = turtle.placeUp
+	elseif(w_dir == "D") then
+		f_inspect = turtle.inspectDown
+		f_dig = turtle.digDown
+		f_place = turtle.placeDown
+	else
+		print("Invalid direction for greedy digging (" .. w_dir .. ")");
+		return false;
+	end;
+	local ss; local si;
+	ss, si = f_inspect();
+
+	if (ss and si) then
+	
+		if ((si.name == "minecraft:lava") or (si.name == "minecraft:flowing_lava")) then
+
+			if (si.metadata == 0) then
+
+				-- Lava. Lava is good
+				local refueled_with_lava = false;
+
+				print("Lava source block detected (" .. w_dir .. "). Looking for an empty bucket...");
+
+				local bucket_slot = inventory.find_item("bucket");
+				if (not (bucket_slot == nil)) then
+					if (turtle.select(bucket_slot)) then
+						print("...found. Using to refuel...");
+						f_place();
+						if (turtle.refuel()) then
+							refueled_with_lava = true;
+							print("...OK. New fuel level: " .. turtle.getFuelLevel());
+						else
+							print("...failed");
+						end;
+					else
+						print("...could select the empty bucket");
+					end;
+				else
+					print("...could not find an empty bucket");
+				end;
+			
+				if (not refueled_with_lava) then
+					print("Something went wrong with lava refuel");
+					print("We're forced to skip this one :-(");
+				end;
+
+			end;
+			ret_val = true;
+
+		elseif ((si.name == "minecraft:water") or (si.name == "minecraft:flowing_water")) then
+			-- water does not get a special treatment other than being ignored
+			ret_val = true;
+		else
+
+			-- we just proceed with the digging.
+			while (not f_dig()) do
+				print("Could not dig (" .. w_dir .. " - " .. si.name .. "). Waiting 10 seconds and trying again");
+				sleep(10);
+			end;
+			ret_val = true;
+
+		end;
+
+	else
+		-- this is air. all good
+		ret_val = true;
+	end;
+
+
+	return ret_val;
+end;
+
 
 -- Possible values of "direction" relative to the local grid pictured above,
 -- and NOT the global world:
---  N, S, E, W, U, D
+--  Valid directions:
+--   N, S, E, W, U, D
+
+-- The process could be made MUCH faster by using digUp and digDown, however that would not
+-- remove water and lava from the volume as those can only be removed by the turtle running through them,
+-- using a bucket or placing a block
 function dig_and_go(direction)
 local ret_val = nil;
+
+	local w_dir = "";
+	if (not (direction == nil)) then
+		if (string.find(string.upper(direction), "^[DENSUW]$")) then
+			w_dir = string.upper(direction);
+		end;
+	end;
+	if (w_dir == "") then
+		print("Invalid direction (" .. w_dir .. ")");
+		return false;
+	end;
 
 
 	while ((ret_val == nil) or (not ret_val)) do
 
-		if ((direction ~= "U") and (direction ~= "D")) then
-			if (not heading_set(direction)) then
+		if (string.find(string.upper(w_dir), "^[DU]$") == nil) then
+
+		
+			if (not heading_set(w_dir)) then
 				print("Call to `heading_set()` failed");
 				return false;
 			end;
-		end;
 
-		--print("Moving " .. direction);
-
-		if ((direction ~= "U") and (direction ~= "D")) then
 			-- we dig ahead and go there
-			if (turtle.detect()) then
-				if (not turtle.dig()) then
-					print("Failed to dig ahead");
-					return false;
-				end;
-			end;
+			navigation.greedy_dig("F");
 
 			if (turtle.forward()) then
 				if (heading == 0) then
@@ -181,14 +285,11 @@ local ret_val = nil;
 			end;
 
 		else
-			-- above or below? This is a little redundant due to specific calls
-			if (direction == "U") then
-				if (turtle.detectUp()) then
-					if (not turtle.digUp()) then
-						print("Failed to dig up");
-						return false;
-					end;
-				end;
+
+			-- up and down have different semantics (movement must be handled manually)
+			navigation.greedy_dig(w_dir);
+
+			if (w_dir == "U") then
 				if (turtle.up()) then
 					offset_z = (offset_z + 1);
 					ret_val = true;
@@ -196,13 +297,7 @@ local ret_val = nil;
 					print("Failed to move up");
 					return false;
 				end;
-			elseif (direction == "D") then
-				if (turtle.detectDown()) then
-					if (not turtle.digDown()) then
-						print("Failed to dig down");
-						return false;
-					end;
-				end;
+			elseif (w_dir == "D") then
 				if (turtle.down()) then
 					offset_z = (offset_z - 1);
 					ret_val = true;
@@ -210,9 +305,6 @@ local ret_val = nil;
 					print("Failed to move down");
 					return false;
 				end;
-			else
-				print("Unsupported direction: " .. direction);
-				return false;
 			end;
 		end;
 

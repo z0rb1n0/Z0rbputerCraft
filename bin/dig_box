@@ -53,6 +53,13 @@ local initial_step_y = tonumber(argv[5]);
 	end;
 
 	
+	if (not inventory.find_item("bucket")) then
+		print("WARNING!!! No empty bucked found in inventory");
+		print("Will be unable to refuel with lava");
+		sleep(5);
+	end;
+	
+
 	print("Moving to initial square");
 
 	local step_loop;
