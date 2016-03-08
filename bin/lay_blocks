@@ -1,6 +1,7 @@
 
 
 
+os.loadAPI("/" .. fs.getDir(shell.getRunningProgram()) .. "/../lib/crutch");
 os.loadAPI("/" .. fs.getDir(shell.getRunningProgram()) .. "/../lib/entities");
 os.loadAPI("/" .. fs.getDir(shell.getRunningProgram()) .. "/../lib/inventory");
 os.loadAPI("/" .. fs.getDir(shell.getRunningProgram()) .. "/../lib/navigation");
@@ -8,31 +9,30 @@ os.loadAPI("/" .. fs.getDir(shell.getRunningProgram()) .. "/../lib/navigation");
 
 local argv = { ... };
 local block_name = argv[1];
-local size_x = tonumber(argv[2]);
-local size_y = tonumber(argv[3]);
-local block_stride_x = tonumber(argv[4]);
-local block_stride_y = tonumber(argv[5]);
+local number_x = tonumber(argv[2]);
+local number_y = tonumber(argv[3]);
+local stride_x = tonumber(argv[4]);
+local stride_y = tonumber(argv[5]);
 local initial_step_x = tonumber(argv[6]);
 local initial_step_y = tonumber(argv[7]);
 
 
-	if (initial_step_x == nil) then initial_step_x = 0; end;
-	if (initial_step_y == nil) then initial_step_y = 0; end;
-	if (block_stride_x == nil) then	block_stride_x = 1;	end;
-	if (block_stride_y == nil) then	block_stride_y = 1;	end;
-	
+	initial_step_x = crutch.coalesce(initial_step_x, 0);
+	initial_step_y = crutch.coalesce(initial_step_y, 0);
+	stride_x = crutch.coalesce(stride_x, 1);
+	stride_y = crutch.coalesce(stride_y, 1);
 
 	if (
 		(block_name == nil) or
-		((size_x == nil) or (size_x < 1)) or
-		((size_y == nil) or (size_y < 1)) or
+		((number_x == nil) or (number_x < 1)) or
+		((number_y == nil) or (number_y < 1)) or
 		((initial_step_y == nil) or (initial_step_y < 0)) or
 		((initial_step_x == nil) or (initial_step_x < 0)) or
-		((block_stride_x == nil) or (block_stride_x < 0)) or
-		((block_stride_y == nil) or (block_stride_y < 0))
+		((stride_x == nil) or (stride_x < 0)) or
+		((stride_y == nil) or (stride_y < 0))
 	) then
 		print("Usage:");
-		print("    lay_blocks <block_name> <size_x> <size_y> [ block_stride_x = 1 [ block_stride_y = 1 [ initial_step_x = 1 [ initial_step_y = 1 ]]]]");
+		print("    lay_blocks <block_name> <number_x> <number_y> [ stride_x = 1 [ stride_y = 1 [ initial_step_x = 1 [ initial_step_y = 1 ]]]]");
 		print("");
 		print("(size/stride values must be positive, initial step values must be nonnegative)");
 		return 1;
@@ -42,27 +42,23 @@ local initial_step_y = tonumber(argv[7]);
 	block_name = entities.canonicalize(block_name);
 
 	print("Checking for sufficient resources");
-	-- plain division. if there's a remainder, that counts as another row
-	local columns_count = math.floor(size_x / block_stride_x); if ((size_x % block_stride_x) > 0) then columns_count = (columns_count + 1); end;
-	local rows_count = math.floor(size_y / block_stride_y); if ((size_y % block_stride_y) > 0) then rows_count = (rows_count + 1); end;
+	local total_items = (number_x * number_y);
 
 	local items_available = inventory.count_items(block_name)
-	print("    " ..  rows_count .. " rows");
-	print("    " ..  columns_count .. " columns");
-	print("    " ..  (columns_count * rows_count) .. " total blocks needed");
+	print("    " ..  total_items .. " total blocks needed");
 	print("    " ..  items_available .. " blocks available");
 
 
-	if (items_available < math.floor(math.floor((size_x * size_y) / block_stride_x) / block_stride_y)) then
-		print("Insufficient blocks of the specified type for the area size and stride");
+	if (items_available < (number_y * number_x)) then
+		print("Insufficient blocks of type `" .. block_name .. "` in inventory");
 		return false;
 	end;
 
-	
-	print("Going one level higher and moving to initial square");
+	print("Going one level higher and positoning at 0, 0");
 	navigation.dig_and_go("U");
 	navigation.offset_force_z(0); -- this doesn't count
 
+	
 	local step_loop;
 
 	-- let's move ahead and sideways as much as it takes
@@ -80,7 +76,7 @@ local initial_step_y = tonumber(argv[7]);
 		end;
 	end;
 
-	print("Laying down " .. size_x .. "x" .. size_y .. "`" .. block_name .. "` every " .. block_stride_x .. "x and " .. block_stride_y .. "y");
+	print("Laying down " .. number_x .. "x" .. number_y .. "`" .. block_name .. "` every " .. stride_x .. "x and " .. stride_y .. "y");
 
 
 	local low_fuel = false;
@@ -88,23 +84,21 @@ local initial_step_y = tonumber(argv[7]);
 	local returning_y = false;
 	local returning_x = false;
 	
-	local curr_offset_x = 0;
-	local curr_offset_y = 0;
+	local curr_block_x = 0;
+	local curr_block_y = 0;
 
 	-- we stop if:
 	--  - we're finished
 	--  - we've got just enough fuel to get back to origin
 
+
+	curr_block_x = 0;
+	curr_block_y = 0;
 	local shift_loop;
 
-	while (not (layer_complete)) do
+	while (not (layer_complete or low_fuel)) do
 
-		-- we store these not to make too many calls
-		curr_offset_x = navigation.offset_get_x();
-		curr_offset_y = navigation.offset_get_y();
-
-
-		-- unfortunately we need to check if we still have blocks in our slot on every loop
+		-- unfortunately we need to check if the correct item is selected at every loop
 		local curr_item = inventory.current_item();
 
 		if ((curr_item == nil) or (inventory.current_item() ~= block_name)) then
@@ -112,26 +106,26 @@ local initial_step_y = tonumber(argv[7]);
 			turtle.select(inventory.find_item(block_name));
 		end;
 
-
-		-- if all is well below, we plant block
+		-- if all is well below, we plant the block
 		if (turtle.detectDown()) then
-			print("Block below is occupied at offset " .. curr_offset_x .. ":" .. curr_offset_y .. ". Skipping");
+			print("Block below is occupied at offset " .. curr_block_x .. ":" .. curr_block_y .. ". Skipping");
 		else
 			turtle.placeDown();
 		end;
 
-
 		-- did we just complete a column?
-		if ((returning_y and (curr_offset_y == 0)) or ((not returning_y) and ((curr_offset_y + block_stride_y) > (size_y - 1)))) then
-			-- Yes we are. did we just complete a row too?
-			if ((returning_x and (curr_offset_x == 0)) or ((not returning_x) and ((curr_offset_x + block_stride_y) > (size_x - 1)))) then
+		if ((returning_y and (curr_block_y == 0)) or ((not returning_y) and (curr_block_y >= (number_y - 1)))) then
 
-				-- we just completed a column AND a row. Time to invert everything and loop out.
-				returning_y = (not returning_y);
+			-- Did we just complete a row too?
+			if ((returning_x and (curr_block_x == 0)) or ((not returning_x) and (curr_block_x >= (number_x - 1)))) then
+
+				-- we just completed a column AND a row.
 				returning_x = (not returning_x);
+
+				-- As soon as a single layer is complete, we end
 				layer_complete = true;
 
-				-- we also ditch all the rubbish and refuel if possible/needed
+				-- we also refuel if possible/needed
 				print("Layer complete. Refueling");
 
 				local slot_idx;
@@ -159,31 +153,37 @@ local initial_step_y = tonumber(argv[7]);
 
 
 				end;
+
 			else
 
-				for shift_loop = 1, block_stride_x do
-					-- this is just the end of a column. We just shift one column and invert N/S
-					if (returning_x) then
-						navigation.dig_and_go("W");
-					else
-						navigation.dig_and_go("E");
-					end;
+				-- this is just the end of a column. We just strafe one stride east
+				-- and invert the Y sweep direction
+				for shift_loop = 1, stride_x do
+					navigation.dig_and_go("E");
 				end;
+				curr_block_x = (curr_block_x + 1);
 				returning_y = (not returning_y);
+
 			end;
 		else
-			-- no. keep laying N/S
-			for shift_loop = 1, block_stride_y do
-				if (returning_y) then
-					navigation.dig_and_go("S");
-				else
-					navigation.dig_and_go("N");
-				end;
+
+			-- still in the middle of a column. We keep going
+			local next_step_dir = "N";
+			local y_motion = 1;
+			if returning_y then
+				next_step_dir = "S";
+				y_motion = -1;
 			end;
+			for shift_loop = 1, stride_y do
+				navigation.dig_and_go(next_step_dir);
+			end;
+			curr_block_y = (curr_block_y + y_motion);
+
 		end;
 
 
-		if (turtle.getFuelLevel() < (initial_step_x + initial_step_y + math.abs(curr_offset_x) + math.abs(curr_offset_y))) then
+
+		if (turtle.getFuelLevel() <= (initial_step_x + initial_step_y + navigation.offset_get_x() + navigation.offset_get_y() + navigation.offset_get_z())) then
 			low_fuel = true;
 			print("Fuel level barely sufficient to return to base. Returning to starting point");
 		end;

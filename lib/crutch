@@ -13,3 +13,18 @@ local tk = {};
 
 	return #tk;
 end;
+
+
+-- like SQL
+function coalesce(...)
+
+	local nai; local nav;
+	
+	for nai, nav in pairs(arg) do
+		if (not (nav == nil)) then
+			return nav;
+		end;
+	end;
+
+	return nil;
+end;
