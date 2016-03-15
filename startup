@@ -12,3 +12,11 @@ for path_c in string.gmatch(shell.path(), "[^:]+") do
 end;
 if (not bin_already_there) then fixed_path = ("/bin:" .. fixed_path); end;
 shell.setPath(fixed_path);
+
+
+if (fs.exists("/startup.local")) then
+	print("`/startup.local` script detected. Executing");
+	if (not shell.run("/startup.local")) then
+		print("WARNING!!! Failed to execute `/startup.local`");
+	end;
+end;
